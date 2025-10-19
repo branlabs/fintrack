@@ -1,0 +1,100 @@
+[
+    {
+        "model": "api.category",
+        "pk": 1,
+        "fields": {
+            "name": "Ăn uống tiệm"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 2,
+        "fields": {
+            "name": "Ăn uống nhà"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 3,
+        "fields": {
+            "name": "Điện nước, nhà"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 4,
+        "fields": {
+            "name": "Chi phí sinh hoạt: internet, giặt xả"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 5,
+        "fields": {
+            "name": "Học tập (sách, viết, sổ,...)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 6,
+        "fields": {
+            "name": "Tài khoản số (GPT, hosting, domain,...)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 7,
+        "fields": {
+            "name": "Giải trí (coi phim, khách sạn,...)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 8,
+        "fields": {
+            "name": "Đầu tư ăn uống (cà phê, sữa,...)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 9,
+        "fields": {
+            "name": "Di chuyển (vé xe, đổ xăng, vé máy bay, grab)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 10,
+        "fields": {
+            "name": "Sức khoẻ (thuốc nhỏ mắt, vitamin, vắc xin, làm răng)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 11,
+        "fields": {
+            "name": "Sinh hoạt nhóm (đá banh, pickleball)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 12,
+        "fields": {
+            "name": "Phát sinh (đám cưới, thôi nôi)"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 13,
+        "fields": {
+            "name": "Dịt tiêu vặt"
+        }
+    },
+    {
+        "model": "api.category",
+        "pk": 14,
+        "fields": {
+            "name": "Hêu tiêu vặt"
+        }
+    }
+]
