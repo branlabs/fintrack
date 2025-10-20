@@ -14,3 +14,4 @@ class Transaction(models.Model):
     note = models.CharField(max_length=255, blank=True)
     def __str__(self):
         return f'{self.occurred_on} - {self.category} - {self.amount}'
+ 
