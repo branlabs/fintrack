@@ -1,5 +1,16 @@
-from rest_framework.response import Response
+from datetime import date
+from calendar import monthrange
+
+from django.db.models import Sum, Case, When, Value, IntegerField
+from django.db.models.functions import ExtractDay, ExtractMonth, ExtractYear, TruncMonth, TruncYear
+from django.shortcuts import get_object_or_404
+
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+from api.models import Category, Transaction
+from api.v1.serializers import CategorySerializer, TransactionSerializer
 
 from api.models import Category
 from api.v1.serializers import CategorySerializer
@@ -39,3 +50,169 @@ def category_detail(request, pk):
         return Response()
 
                       
+# ---- TRANSACTION CRUD ----
+@api_view(['GET', 'POST'])
+def transaction_list(request):
+    if request.method == 'GET':
+        # Lọc theo month/year optional: /api/transaction/list/?month=11&year=2025&category=3
+        qs = Transaction.objects.all().select_related('category')
+        category_id = request.query_params.get('category')
+        if category_id:
+            qs = qs.filter(category_id=category_id)
+
+        month = request.query_params.get('month')
+        year = request.query_params.get('year')
+        if year:
+            qs = qs.filter(occurred_on__year=year)
+        if month:
+            qs = qs.filter(occurred_on__month=month)
+
+        serializer = TransactionSerializer(qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    else:  # POST
+        serializer = TransactionSerializer(data=request.data)
+        if serializer.is_valid():
+            obj = serializer.save()
+            return Response(TransactionSerializer(obj).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def transaction_detail(request, pk):
+    tx = get_object_or_404(Transaction, pk=pk)
+
+    if request.method == 'GET':
+        return Response(TransactionSerializer(tx).data, status=status.HTTP_200_OK)
+
+    elif request.method == 'PUT':
+        serializer = TransactionSerializer(tx, data=request.data, partial=False)
+        if serializer.is_valid():
+            tx = serializer.save()
+            return Response(TransactionSerializer(tx).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    else:  # DELETE
+        tx.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---- Tổng hợp: tuần / tháng / năm ----
+@api_view(['GET'])
+def transaction_summary(request):
+    """
+    /api/transaction/summary/?group=week&month=11&year=2025
+    /api/transaction/summary/?group=month&year=2025
+    /api/transaction/summary/?group=year&year=2025
+    - amount có thể âm/dương (thu/chi). Nếu muốn chỉ tính CHI, client hãy truyền thêm ?type=expense và backend lọc amount__lt=0
+    """
+    group = request.query_params.get('group')  # 'week' | 'month' | 'year'
+    if group not in ('week', 'month', 'year'):
+        return Response({'detail': 'group must be one of: week, month, year'}, status=status.HTTP_400_BAD_REQUEST)
+
+    qs = Transaction.objects.all()
+
+    # Lọc theo category optional
+    category_id = request.query_params.get('category')
+    if category_id:
+        qs = qs.filter(category_id=category_id)
+
+    # Lọc kiểu thu/chi optional
+    tx_type = request.query_params.get('type')  # 'income' | 'expense' | None
+    if tx_type == 'income':
+        qs = qs.filter(amount__gt=0)
+    elif tx_type == 'expense':
+        qs = qs.filter(amount__lt=0)
+
+    # ---- GROUP = WEEK: tuần 1..4 trong 1 tháng (gộp ngày 29-31 vào tuần 4) ----
+    if group == 'week':
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+        if not (year and month):
+            return Response({'detail': 'week summary requires year and month'}, status=status.HTTP_400_BAD_REQUEST)
+        year = int(year); month = int(month)
+
+        # Lọc theo tháng/năm
+        qs = qs.filter(occurred_on__year=year, occurred_on__month=month).annotate(day=ExtractDay('occurred_on'))
+
+        # Xác định "tuần trong tháng" theo quy ước:
+        # 1: ngày 1-7, 2: 8-14, 3: 15-21, 4: 22-31
+        week_bucket = Case(
+            When(day__lte=7, then=Value(1)),
+            When(day__lte=14, then=Value(2)),
+            When(day__lte=21, then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField()
+        )
+
+        rows = (qs
+                .values('category')  # có/không cũng được; mình gom toàn bảng nên bỏ
+                .annotate(week=week_bucket)
+                .values('week')
+                .annotate(total=Sum('amount'))
+                .values('week', 'total'))
+
+        # Map về tuple 1..4 đầy đủ (có thể không đủ tuần nếu không có giao dịch tuần đó)
+        result = {1: '0.00', 2: '0.00', 3: '0.00', 4: '0.00'}
+        for r in rows:
+            result[int(r['week'])] = str(r['total'] or 0)
+
+        return Response({
+            'group': 'week',
+            'year': year,
+            'month': month,
+            'data': [
+                {'week': 1, 'total': result[1]},
+                {'week': 2, 'total': result[2]},
+                {'week': 3, 'total': result[3]},
+                {'week': 4, 'total': result[4]},
+            ]
+        }, status=status.HTTP_200_OK)
+
+    # ---- GROUP = MONTH: tháng 1..12 trong 1 năm ----
+    if group == 'month':
+        year = request.query_params.get('year')
+        if not year:
+            return Response({'detail': 'month summary requires year'}, status=status.HTTP_400_BAD_REQUEST)
+        year = int(year)
+
+        rows = (qs.filter(occurred_on__year=year)
+                  .annotate(m=ExtractMonth('occurred_on'))
+                  .values('m')
+                  .annotate(total=Sum('amount'))
+                  .values('m', 'total'))
+
+        # Bảo đảm đủ 12 tháng
+        result = {m: '0.00' for m in range(1, 13)}
+        for r in rows:
+            result[int(r['m'])] = str(r['total'] or 0)
+
+        return Response({
+            'group': 'month',
+            'year': year,
+            'data': [{'month': m, 'total': result[m]} for m in range(1, 13)]
+        }, status=status.HTTP_200_OK)
+
+    # ---- GROUP = YEAR: năm trước / năm nay / năm sau (tâm là 'year' truyền vào) ----
+    if group == 'year':
+        center_year = request.query_params.get('year')
+        if not center_year:
+            return Response({'detail': 'year summary requires year'}, status=status.HTTP_400_BAD_REQUEST)
+        center_year = int(center_year)
+        years = [center_year - 1, center_year, center_year + 1]
+
+        rows = (qs.filter(occurred_on__year__in=years)
+                  .annotate(y=ExtractYear('occurred_on'))
+                  .values('y')
+                  .annotate(total=Sum('amount'))
+                  .values('y', 'total'))
+
+        result = {y: '0.00' for y in years}
+        for r in rows:
+            result[int(r['y'])] = str(r['total'] or 0)
+
+        return Response({
+            'group': 'year',
+            'years': years,
+            'data': [{'year': y, 'total': result[y]} for y in years]
+        }, status=status.HTTP_200_OK)
