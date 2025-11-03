@@ -101,14 +101,17 @@ def transaction_detail(request, pk):
 @api_view(['GET'])
 def transaction_summary(request):
     """
+    /api/transaction/summary/?group=day&month=11&year=2025
     /api/transaction/summary/?group=week&month=11&year=2025
     /api/transaction/summary/?group=month&year=2025
     /api/transaction/summary/?group=year&year=2025
-    - amount có thể âm/dương (thu/chi). Nếu muốn chỉ tính CHI, client hãy truyền thêm ?type=expense và backend lọc amount__lt=0
+
+    - amount có thể âm/dương (thu/chi). Nếu muốn chỉ tính CHI, client truyền ?type=expense (amount__lt=0).
+    - Lọc theo category qua ?category=<id>.
     """
-    group = request.query_params.get('group')  # 'week' | 'month' | 'year'
-    if group not in ('week', 'month', 'year'):
-        return Response({'detail': 'group must be one of: week, month, year'}, status=status.HTTP_400_BAD_REQUEST)
+    group = request.query_params.get('group')  # 'day' | 'week' | 'month' | 'year'
+    if group not in ('day', 'week', 'month', 'year'):
+        return Response({'detail': 'group must be one of: day, week, month, year'}, status=status.HTTP_400_BAD_REQUEST)
 
     qs = Transaction.objects.all()
 
@@ -124,6 +127,36 @@ def transaction_summary(request):
     elif tx_type == 'expense':
         qs = qs.filter(amount__lt=0)
 
+    # ---- GROUP = DAY: ngày 1..N trong một tháng ----
+    if group == 'day':
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+        if not (year and month):
+            return Response({'detail': 'day summary requires year and month'}, status=status.HTTP_400_BAD_REQUEST)
+        year = int(year); month = int(month)
+
+        # Số ngày trong tháng
+        days_in_month = monthrange(year, month)[1]
+
+        # Lọc theo tháng/năm rồi group theo ngày
+        rows = (qs.filter(occurred_on__year=year, occurred_on__month=month)
+                  .annotate(d=ExtractDay('occurred_on'))
+                  .values('d')
+                  .annotate(total=Sum('amount'))
+                  .values('d', 'total'))
+
+        # Bảo đảm đủ 1..days_in_month
+        result = {d: '0.00' for d in range(1, days_in_month + 1)}
+        for r in rows:
+            result[int(r['d'])] = str(r['total'] or 0)
+
+        return Response({
+            'group': 'day',
+            'year': year,
+            'month': month,
+            'data': [{'day': d, 'total': result[d]} for d in range(1, days_in_month + 1)]
+        }, status=status.HTTP_200_OK)
+
     # ---- GROUP = WEEK: tuần 1..4 trong 1 tháng (gộp ngày 29-31 vào tuần 4) ----
     if group == 'week':
         year = request.query_params.get('year')
@@ -132,11 +165,8 @@ def transaction_summary(request):
             return Response({'detail': 'week summary requires year and month'}, status=status.HTTP_400_BAD_REQUEST)
         year = int(year); month = int(month)
 
-        # Lọc theo tháng/năm
         qs = qs.filter(occurred_on__year=year, occurred_on__month=month).annotate(day=ExtractDay('occurred_on'))
 
-        # Xác định "tuần trong tháng" theo quy ước:
-        # 1: ngày 1-7, 2: 8-14, 3: 15-21, 4: 22-31
         week_bucket = Case(
             When(day__lte=7, then=Value(1)),
             When(day__lte=14, then=Value(2)),
@@ -146,13 +176,11 @@ def transaction_summary(request):
         )
 
         rows = (qs
-                .values('category')  # có/không cũng được; mình gom toàn bảng nên bỏ
                 .annotate(week=week_bucket)
                 .values('week')
                 .annotate(total=Sum('amount'))
                 .values('week', 'total'))
 
-        # Map về tuple 1..4 đầy đủ (có thể không đủ tuần nếu không có giao dịch tuần đó)
         result = {1: '0.00', 2: '0.00', 3: '0.00', 4: '0.00'}
         for r in rows:
             result[int(r['week'])] = str(r['total'] or 0)
@@ -182,7 +210,6 @@ def transaction_summary(request):
                   .annotate(total=Sum('amount'))
                   .values('m', 'total'))
 
-        # Bảo đảm đủ 12 tháng
         result = {m: '0.00' for m in range(1, 13)}
         for r in rows:
             result[int(r['m'])] = str(r['total'] or 0)

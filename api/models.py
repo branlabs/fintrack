@@ -22,9 +22,6 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=['category', 'occurred_on'], name='idx_tx_cat_date'),
         ]
-        # constraints = [
-        #     models.CheckConstraint(check=~models.Q(amount=0), name='ck_tx_amount_nonzero'),
-        # ]
 
     def __str__(self):
         return f'{self.occurred_on} - {self.category} - {self.amount}'
