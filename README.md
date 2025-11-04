@@ -1,35 +1,77 @@
 # FinTrack
 
-> Daily expense — ghi chép danh mục chi mỗi ngày và hiển thị báo cáo trực quan.
+> Ghi chép chi tiêu hằng ngày theo danh mục và xem biểu đồ trực quan.
 
 ## Tính năng
-- Ghi nhanh thu/chi theo danh mục, ghi chú, ví/nguồn tiền
-- Ngân sách theo tháng và cảnh báo khi sắp vượt ngưỡng
-- Biểu đồ ngày/tuần/tháng, báo cáo theo danh mục & ví
-- Tìm kiếm, lọc nâng cao; xuất CSV
-- Đồng bộ đa thiết bị (tùy chọn), sao lưu/khôi phục dữ liệu
-- Quyền riêng tư: dữ liệu cá nhân, có thể chạy hoàn toàn cục bộ
 
-## Kiến trúc 
-- `fintrack/web` – ứng dụng web (boostrap)
-- `finctrack/api/v1` – REST API Django 
+* Ghi nhanh chi tiêu theo **danh mục**
+* Quản lý **ngân sách** theo **tuần / tháng / năm**
+* **Biểu đồ** theo **ngày / tuần / tháng**
+* Xuất báo cáo: **PDF**, **CSV**
 
+## Kiến trúc
 
-> Không dùng monorepo? Đơn giản giữ một app duy nhất trong root `fintrack/`.
+* `fintrack/web` — Ứng dụng web (Bootstrap)
+* `fintrack/api/v1` — REST API (Django)
 
-## Bắt đầu
+> Không dùng monorepo. Toàn bộ mã nguồn nằm trong thư mục gốc `fintrack/` để đơn giản hoá.
+
+## Yêu cầu
+
+* Python **3.10+**
+* `pip` mới nhất (khuyến nghị)
+* Git
+
+## Cài đặt & Chạy
+
+### macOS / Linux
+
 ```bash
-# 1) Create the virtual environment
-git clone https//github.com/brandlabs/fintrack.git
-python -m venv menv
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-& .\fintrack-env\Scripts\Activate.ps1
+# 1) Clone source and create the virtual environment
+git clone https://github.com/brandlabs/fintrack.git
 cd fintrack
+python -m venv .venv
+source .venv/bin/activate
 
 # 2) Install packages
-pip install --pre django
 python -m pip install --upgrade pip
+pip install django  
 
-# 3) Run webserver
+# 3) Initial Database 
+python .\manage.py migrate
+
+# 4) Run server
 python .\manage.py runserver
 ```
+
+### Windows (PowerShell)
+
+```powershell
+# 1) Clone source and create the virtual environment
+git clone https://github.com/brandlabs/fintrack.git
+cd fintrack
+python -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+
+# 2) Install packages
+python -m pip install --upgrade pip
+pip install django  
+
+# 3) Initial Database 
+python .\manage.py migrate
+
+# 4) Run server
+python .\manage.py runserver
+```
+
+## Cấu trúc thư mục (dự kiến)
+
+```
+fintrack/
+├─ web/                 # source web (templates, static, Bootstrap)
+├─ api/
+│  └─ v1/               # Django REST API (views, serializers, urls)
+├─ manage.py
+```
+
