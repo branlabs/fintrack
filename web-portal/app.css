@@ -1,0 +1,97 @@
+:root {
+    --header-h: 64px;
+    --footer-h: 56px;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+.app-root {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.app-header {
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, .075);
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Main layout */
+.app-main {
+    height: calc(100vh - var(--header-h) - var(--footer-h));
+    overflow: hidden;
+}
+
+.app-scroll {
+    height: 100%;
+    overflow: auto;
+    padding: 1rem;
+}
+
+/* Sidebar */
+.sidebar {
+    border-right: 1px solid rgba(0, 0, 0, .075);
+    height: 100%;
+    padding: 1rem .75rem;
+}
+
+.sidebar .nav-link {
+    border-radius: .5rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Cards */
+.mini-card {
+    min-height: 140px;
+}
+
+.big-card {
+    min-height: 360px;
+}
+
+/* Chart area */
+.chart-wrap {
+    position: relative;
+    height: auto;
+    min-height: 300px;
+}
+
+.chart-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Footer */
+.app-footer {
+    height: var(--footer-h);
+    display: flex;
+    align-items: center;
+    border-top: 1px solid rgba(0, 0, 0, .075);
+    background: #fff;
+    padding: .5rem 1rem;
+}
+
+/* Tổng chi */
+#totalAmount {
+    font-size: 1.75rem;
+}
+
+#totalLabel {
+    display: block;
+    margin-top: .25rem;
+}
