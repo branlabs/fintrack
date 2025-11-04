@@ -1,6 +1,6 @@
 # FinTrack
 
-> Daily expense— ghi chép chi và xem báo cáo trực quan.
+> Daily expense — ghi chép danh mục chi mỗi ngày và hiển thị báo cáo trực quan.
 
 ## Tính năng
 - Ghi nhanh thu/chi theo danh mục, ghi chú, ví/nguồn tiền
@@ -10,23 +10,26 @@
 - Đồng bộ đa thiết bị (tùy chọn), sao lưu/khôi phục dữ liệu
 - Quyền riêng tư: dữ liệu cá nhân, có thể chạy hoàn toàn cục bộ
 
-## Kiến trúc (đề xuất)
-- `apps/web` – ứng dụng web (ví dụ: Next.js/React)
-- `packages/api` – REST/GraphQL API (ví dụ: Node.js)
-- `packages/db` – schema & migration (ví dụ: Prisma + PostgreSQL)
-- `packages/ui` – thư viện UI dùng chung (nếu cần)
+## Kiến trúc 
+- `fintrack/web` – ứng dụng web (boostrap)
+- `finctrack/api/v1` – REST API Django 
+
 
 > Không dùng monorepo? Đơn giản giữ một app duy nhất trong root `fintrack/`.
 
 ## Bắt đầu
 ```bash
-# 1) Clone
-git clone https://github.com/<your-org-or-user>/fintrack
+# 1) Create the virtual environment
+git clone https//github.com/brandlabs/fintrack.git
+python -m venv menv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+& .\fintrack-env\Scripts\Activate.ps1
 cd fintrack
 
-# 2) Cấu hình
-cp .env.example .env   # cập nhật DATABASE_URL, JWT_SECRET, v.v.
+# 2) Install packages
+pip install --pre django
+python -m pip install --upgrade pip
 
-# 3) Cài đặt & chạy (ví dụ với pnpm)
-pnpm install
-pnpm dev
+# 3) Run webserver
+python .\manage.py runserver
+```
