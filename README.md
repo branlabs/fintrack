@@ -1,28 +1,26 @@
 # FinTrack
 
-> Ghi chép chi tiêu hằng ngày theo danh mục và xem biểu đồ trực quan.
+> Record daily expenses by category and view visual charts.
 
-## Tính năng
+## Features
 
-* Ghi nhanh chi tiêu theo **danh mục**
-* Quản lý **ngân sách** theo **tuần / tháng / năm**
-* **Biểu đồ** theo **ngày / tuần / tháng**
-* Xuất báo cáo: **PDF**, **CSV**
+* Quick expense entry by **category**
+* **Budgeting** by **week / month / year**
+* **Charts** by **day / week / month**
+* Export reports: **PDF**, **CSV**
 
-## Kiến trúc
+## Architecture
 
-* `fintrack/web` — Ứng dụng web (Bootstrap)
+* `fintrack/web` — Web app (Bootstrap)
 * `fintrack/api/v1` — REST API (Django)
 
-> Không dùng monorepo. Toàn bộ mã nguồn nằm trong thư mục gốc `fintrack/` để đơn giản hoá.
-
-## Yêu cầu
+## Requirements
 
 * Python **3.10+**
-* `pip` mới nhất (khuyến nghị)
+* Latest `pip` (recommended)
 * Git
 
-## Cài đặt & Chạy
+## Installation & Run
 
 ### macOS / Linux
 
@@ -65,13 +63,12 @@ python .\manage.py migrate
 python .\manage.py runserver
 ```
 
-## Cấu trúc thư mục (dự kiến)
+## Directory Structure
 
 ```
 fintrack/
-├─ web/                 # source web (templates, static, Bootstrap)
+├─ web/                 # web source (templates, static, Bootstrap)
 ├─ api/
 │  └─ v1/               # Django REST API (views, serializers, urls)
 ├─ manage.py
 ```
-
