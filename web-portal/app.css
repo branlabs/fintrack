@@ -95,3 +95,9 @@ body {
     display: block;
     margin-top: .25rem;
 }
+
+/* Nút chọn thời gian */
+.btn-group .btn {
+    flex: 1;
+    min-width: 60px;
+}
