@@ -53,15 +53,63 @@
                             </div>
                         </div>
 
+                        <!-- CREATE TRANSACTION PANEL -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-white">
+                                <strong>Tạo giao dịch</strong>
+                            </div>
+                            <div class="card-body">
+                                <div id="txAlert" class="alert d-none" role="alert"></div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Category</label>
+                                    <select id="txCategory" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>Đang tải…</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Amount</label>
+                                    <input id="txAmount" type="number" step="0.01" class="form-control form-control-sm"
+                                        placeholder="VD: chi tiêu 10000" required>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">Date</label>
+                                    <input id="txDate" type="date" class="form-control form-control-sm" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Note</label>
+                                    <input id="txNote" type="text" class="form-control form-control-sm"
+                                        placeholder="Ghi chú (tuỳ chọn)">
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button id="btnTxCreate" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-plus-circle"></i> Create
+                                    </button>
+                                    <button id="btnTxClear" type="button" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /CREATE TRANSACTION PANEL -->
+
+
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <div class="btn-group w-100" role="group" aria-label="Khoảng thời gian">
                                 <button id="btnD" class="btn btn-outline-primary btn-sm w-100">Ngày</button>
                                 <button id="btnW" class="btn btn-outline-primary btn-sm w-100">Tuần</button>
                                 <button id="btnM" class="btn btn-outline-primary btn-sm w-100">Tháng</button>
                             </div>
+
                         </div>
                     </div>
                 </section>
+
+
 
                 <!-- Cột phải (biểu đồ lớn) -->
                 <section class="col-12 col-md-7">
@@ -102,26 +150,140 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Sinh dữ liệu ngẫu nhiên
-        function genData(n, amp = 10) {
-            const data = [];
-            let v = Math.random() * amp;
-            for (let i = 0; i < n; i++) {
-                v += (Math.random() - 0.5) * (amp * 0.2);
-                data.push(Math.max(0, v));
-            }
+        // ==== CẤU HÌNH ====
+        const BASE_API = 'http://127.0.0.1:8000/api/';   // chỉnh cho khớp môi trường
+
+        // (giữ nguyên apiFetch bạn đã viết hoặc dùng phiên bản có Accept)
+        async function apiFetch(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                ...(options.headers || {})
+            };
+            const res = await fetch(url, { headers, mode: 'cors', ...options });
+            const ct = res.headers.get('content-type') || '';
+            const data = ct.includes('application/json') ? await res.json() : await res.text();
+            if (!res.ok) throw new Error(typeof data === 'string' ? data : (data.detail || JSON.stringify(data)));
             return data;
         }
 
-        // Biểu đồ chính
+        // ==== HÀM TIỆN ÍCH ====
+        const today = new Date();
+        const thisYear = today.getFullYear();
+        const thisMonth = today.getMonth() + 1; // 1..12
+
+        function vnMoney(x) {
+            return x.toLocaleString('vi-VN') + '₫';
+        }
+
+        // Xác định "bucket" hiện tại theo range: ngày/tuần/tháng
+        function currentBucket(rangeKey) {
+            const d = new Date();
+            if (rangeKey === 'D') {
+                return d.getDate();                 // ngày trong tháng: 1..N
+            }
+            if (rangeKey === 'W') {
+                const day = d.getDate();
+                if (day <= 7) return 1;
+                if (day <= 14) return 2;
+                if (day <= 21) return 3;
+                return 4;                           // 22..31
+            }
+            // 'M'
+            return d.getMonth() + 1;              // tháng: 1..12
+        }
+
+        // Lấy tổng đúng bucket hiện tại từ labels/values
+        function pickTotalForRange(rangeKey, labels, values) {
+            const bucket = currentBucket(rangeKey);          // số ngày/tuần/tháng hiện tại
+            const idx = labels.findIndex(l => Number(l) === Number(bucket));
+            return idx >= 0 ? Number(values[idx] || 0) : 0;
+        }
+
+
+        // ==== GỌI API SUMMARY & CẬP NHẬT BIỂU ĐỒ/TỔNG ====
+        let currentRange = 'M'; // D | W | M
+
+        async function getSummary(rangeKey) {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = today.getMonth() + 1;
+
+            let url = '';
+            if (rangeKey === 'D') {
+                // ngày 1..N trong THÁNG hiện tại
+                url = `${BASE_API}transaction/summary/?group=day&year=${y}&month=${m}`;
+            } else if (rangeKey === 'W') {
+                // tuần 1..4 trong THÁNG hiện tại
+                url = `${BASE_API}transaction/summary/?group=week&year=${y}&month=${m}`;
+            } else { // 'M'
+                // tháng 1..12 trong NĂM hiện tại
+                url = `${BASE_API}transaction/summary/?group=month&year=${y}`;
+            }
+            // nếu bạn muốn chắc chắn nhận JSON:
+            url += (url.includes('?') ? '&' : '?') + 'format=json';
+
+            return apiFetch(url);
+        }
+
+
+        function toLabelsValues(rangeKey, json) {
+            if (rangeKey === 'D') {
+                return {
+                    labels: json.data.map(r => r.day),
+                    values: json.data.map(r => Number(r.total || 0)) // không cần Math.abs
+                };
+            } else if (rangeKey === 'W') {
+                return {
+                    labels: json.data.map(r => r.week),              // [1,2,3,4]
+                    values: json.data.map(r => Number(r.total || 0))
+                };
+            } else { // 'M'
+                return {
+                    labels: json.data.map(r => r.month),             // [1..12]
+                    values: json.data.map(r => Number(r.total || 0))
+                };
+            }
+        }
+
+
+        async function updateFromAPI(rangeKey) {
+            currentRange = rangeKey;
+
+            const elTotal = document.getElementById('totalAmount');
+            const elLabel = document.getElementById('totalLabel');
+            elLabel.textContent = rangeKey === 'D' ? 'Hôm nay' : (rangeKey === 'W' ? 'Tuần này' : 'Tháng này');
+
+            try {
+                const json = await getSummary(rangeKey);
+                const { labels, values } = toLabelsValues(rangeKey, json);
+
+                const total = pickTotalForRange(rangeKey, labels, values);
+                elTotal.textContent = total.toLocaleString('vi-VN') + '₫';
+
+                mainChart.data.labels = labels;
+                mainChart.data.datasets[0].data = values;
+                mainChart.update();
+            } catch (e) {
+                console.error(e);
+                mainChart.data.labels = [];
+                mainChart.data.datasets[0].data = [];
+                mainChart.update();
+                elTotal.textContent = '0₫';
+                elLabel.textContent = '—';
+                alert('Không tải được dữ liệu: ' + e.message);
+            }
+        }
+
+        // ==== KHỞI TẠO CHART (giữ nguyên cấu hình chart của bạn nhưng data rỗng ban đầu) ====
         const mainCtx = document.getElementById('mainChart');
         const mainChart = new Chart(mainCtx, {
             type: 'line',
             data: {
-                labels: Array.from({ length: 30 }, (_, i) => i + 1),
+                labels: [],
                 datasets: [{
-                    label: 'Doanh số',
-                    data: genData(30, 20),
+                    label: 'Chi tiêu',
+                    data: [],
                     borderWidth: 2,
                     tension: .35,
                     pointRadius: 0,
@@ -137,45 +299,98 @@
                 }
             }
         });
+        // ====== PANEL TẠO TRANSACTION: LOAD CATEGORY & FORM ======
+        const elTxAlert = document.getElementById('txAlert');
+        const elTxCat = document.getElementById('txCategory');
+        const elTxAmount = document.getElementById('txAmount');
+        const elTxDate = document.getElementById('txDate');
+        const elTxNote = document.getElementById('txNote');
+        const elBtnCreate = document.getElementById('btnTxCreate');
+        const elBtnClear = document.getElementById('btnTxClear');
 
-        // Khoảng thời gian
-        const ranges = { 'D': 7, 'W': 14, 'M': 30 };
-
-        // Tính tổng chi tiêu
-        function calcTotal(rangeKey) {
-            const n = ranges[rangeKey] || 30;
-            const values = genData(n, 20);
-            const total = values.reduce((a, b) => a + b, 0);
-            return { total, values };
+        function showTxAlert(type, msg) {
+            if (!elTxAlert) return;
+            elTxAlert.className = `alert alert-${type}`;
+            elTxAlert.textContent = msg;
+            elTxAlert.classList.remove('d-none');
+            setTimeout(() => elTxAlert.classList.add('d-none'), 3000);
         }
 
-        // Cập nhật hiển thị
-        function updateTotal(rangeKey) {
-            const { total, values } = calcTotal(rangeKey);
-            const elTotal = document.getElementById('totalAmount');
-            const elLabel = document.getElementById('totalLabel');
-
-            elTotal.textContent = total.toLocaleString('vi-VN') + '₫';
-            elLabel.textContent =
-                rangeKey === 'D' ? 'Hôm nay' :
-                    rangeKey === 'W' ? 'Tuần này' :
-                        'Tháng này';
-
-            // Cập nhật biểu đồ
-            const n = ranges[rangeKey];
-            mainChart.data.labels = Array.from({ length: n }, (_, i) => i + 1);
-            mainChart.data.datasets[0].data = values;
-            mainChart.update();
+        function todayStr() {
+            const d = new Date();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${mm}-${dd}`;
         }
 
-        // Gán sự kiện
-        document.getElementById('btnD').addEventListener('click', () => updateTotal('D'));
-        document.getElementById('btnW').addEventListener('click', () => updateTotal('W'));
-        document.getElementById('btnM').addEventListener('click', () => updateTotal('M'));
+        async function loadCategories() {
+            try {
+                const data = await apiFetch(`${BASE_API}category/list/?format=json`);
+                if (!elTxCat) return;
+                elTxCat.innerHTML = '<option value="" disabled selected>-- Chọn category --</option>';
+                data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;          // cần CategorySerializer trả 'id'
+                    opt.textContent = c.name;
+                    elTxCat.appendChild(opt);
+                });
+            } catch (e) {
+                if (elTxCat) elTxCat.innerHTML = '<option value="">(Không tải được danh mục)</option>';
+                showTxAlert('danger', `Lỗi tải category: ${e.message}`);
+            }
+        }
 
-        // Mặc định: Tháng
-        updateTotal('M');
+        function clearTxForm() {
+            if (elTxCat) elTxCat.value = '';
+            if (elTxAmount) elTxAmount.value = '';
+            if (elTxDate) elTxDate.value = todayStr();
+            if (elTxNote) elTxNote.value = '';
+        }
+
+        // (tuỳ bạn có dùng hay không) tạo transaction qua API
+        async function createTransaction() {
+            try {
+                const category = parseInt(elTxCat.value, 10);
+                const amount = parseFloat(elTxAmount.value);
+                const date = elTxDate.value;
+                if (!category) return showTxAlert('warning', 'Vui lòng chọn Category.');
+                if (Number.isNaN(amount)) return showTxAlert('warning', 'Vui lòng nhập Amount hợp lệ.');
+                if (!date) return showTxAlert('warning', 'Vui lòng chọn Date.');
+
+                const payload = { category, amount: amount.toFixed(2), occurred_on: date, note: elTxNote.value || '' };
+                await apiFetch(`${BASE_API}transaction/list/`, { method: 'POST', body: JSON.stringify(payload) });
+
+                showTxAlert('success', 'Tạo transaction thành công!');
+                clearTxForm();
+                updateFromAPI(currentRange); // refresh biểu đồ/tổng
+            } catch (e) {
+                showTxAlert('danger', `Không tạo được: ${e.message}`);
+            }
+        }
+
+        // Khởi tạo panel
+        if (elTxDate) elTxDate.value = todayStr();
+        loadCategories();
+
+        // Gán sự kiện nút trong panel (nếu có)
+        if (elBtnCreate) elBtnCreate.addEventListener('click', (e) => { e.preventDefault(); createTransaction(); });
+        if (elBtnClear) elBtnClear.addEventListener('click', (e) => { e.preventDefault(); clearTxForm(); });
+
+        // ==== GÁN SỰ KIỆN NÚT ====
+        document.getElementById('btnD').addEventListener('click', () => updateFromAPI('D'));
+        document.getElementById('btnW').addEventListener('click', () => updateFromAPI('W'));
+        document.getElementById('btnM').addEventListener('click', () => updateFromAPI('M'));
+
+        // ==== LOAD MẶC ĐỊNH: THÁNG ====
+        updateFromAPI('M');
+
+        // === LƯU Ý: sau khi bạn tạo transaction thành công, có thể refresh biểu đồ:
+        //   showTxAlert('success', 'Tạo transaction thành công!');
+        //   clearTxForm();
+        //   updateFromAPI(currentRange);
     </script>
+
+
 </body>
 
 </html>
