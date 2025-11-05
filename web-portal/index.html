@@ -43,74 +43,88 @@
                 </aside>
 
                 <!-- Cột giữa (tổng chi + nút chọn thời gian) -->
+                <!-- Cột giữa (tổng chi + bộ chọn thời gian + tạo giao dịch) -->
                 <section class="col-12 col-md-3">
                     <div class="app-scroll">
-                        <div class="card mini-card mb-3 text-center">
+
+                        <!-- Tổng chi -->
+                        <div class="card mini-card mb-3 text-center border-0 shadow-sm">
                             <div class="card-body">
-                                <h6 class="card-title mb-2">Tổng chi</h6>
-                                <h3 id="totalAmount" class="fw-bold text-primary mb-0">0₫</h3>
-                                <small class="text-muted" id="totalLabel">Hôm nay</small>
+                                <h6 class="card-title text-uppercase text-muted mb-2">Tổng chi</h6>
+                                <h3 id="totalAmount" class="fw-bold text-primary mb-1">0₫</h3>
+                                <small class="text-secondary" id="totalLabel">Hôm nay</small>
+                            </div>
+                        </div>
+
+                        <!-- Bộ chọn khoảng thời gian (ĐÃ ĐƯA LÊN TRÊN) -->
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body py-2">
+                                <div class="btn-group w-100" role="group" aria-label="Khoảng thời gian">
+                                    <button id="btnD" class="btn btn-outline-primary btn-sm flex-fill">Ngày</button>
+                                    <button id="btnW" class="btn btn-outline-primary btn-sm flex-fill">Tuần</button>
+                                    <button id="btnM" class="btn btn-outline-primary btn-sm flex-fill">Tháng</button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- CREATE TRANSACTION PANEL -->
-                        <div class="card mb-3">
-                            <div class="card-header bg-white">
-                                <strong>Tạo giao dịch</strong>
+                        <div id="txPanel" class="card border-0 shadow-sm mb-3">
+                            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                                <strong class="mb-0">
+                                    <i class="bi bi-receipt-cutoff me-2"></i>Tạo giao dịch
+                                </strong>
                             </div>
                             <div class="card-body">
-                                <div id="txAlert" class="alert d-none" role="alert"></div>
+                                <div id="txAlert" class="alert d-none mb-3" role="alert"></div>
 
-                                <div class="mb-2">
-                                    <label class="form-label">Category</label>
+                                <div class="mb-3">
+                                    <label for="txCategory" class="form-label">Danh mục</label>
                                     <select id="txCategory" class="form-select form-select-sm" required>
                                         <option value="" disabled selected>Đang tải…</option>
                                     </select>
-                                </div>
-
-                                <div class="mb-2">
-                                    <label class="form-label">Amount</label>
-                                    <input id="txAmount" type="number" step="0.01" class="form-control form-control-sm"
-                                        placeholder="VD: chi tiêu 10000" required>
-                                </div>
-
-                                <div class="mb-2">
-                                    <label class="form-label">Date</label>
-                                    <input id="txDate" type="date" class="form-control form-control-sm" required>
+                                    <div class="invalid-feedback">Vui lòng chọn danh mục.</div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Note</label>
+                                    <label for="txAmount" class="form-label">Số tiền</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-cash-coin"></i></span>
+                                        <input id="txAmount" type="number" step="0.01" class="form-control"
+                                            placeholder="VD: 10000" required>
+                                        <span class="input-group-text">₫</span>
+                                    </div>
+                                    <div class="form-text">Nhập số dương, dùng dấu chấm cho số lẻ.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="txDate" class="form-label">Ngày</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                        <input id="txDate" type="date" class="form-control" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="txNote" class="form-label">Ghi chú</label>
                                     <input id="txNote" type="text" class="form-control form-control-sm"
                                         placeholder="Ghi chú (tuỳ chọn)">
                                 </div>
 
-                                <div class="d-flex gap-2">
-                                    <button id="btnTxCreate" class="btn btn-primary btn-sm">
-                                        <i class="bi bi-plus-circle"></i> Create
+                                <div class="d-grid gap-2 d-sm-flex">
+                                    <button id="btnTxCreate" class="btn btn-primary btn-sm flex-fill">
+                                        <i class="bi bi-plus-circle me-1"></i>Tạo
                                     </button>
-                                    <button id="btnTxClear" type="button" class="btn btn-outline-secondary btn-sm">
-                                        <i class="bi bi-x-circle"></i> Clear
+                                    <button id="btnTxClear" type="button"
+                                        class="btn btn-outline-secondary btn-sm flex-fill">
+                                        <i class="bi bi-x-circle me-1"></i>Xoá
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <!-- /CREATE TRANSACTION PANEL -->
 
-
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <div class="btn-group w-100" role="group" aria-label="Khoảng thời gian">
-                                <button id="btnD" class="btn btn-outline-primary btn-sm w-100">Ngày</button>
-                                <button id="btnW" class="btn btn-outline-primary btn-sm w-100">Tuần</button>
-                                <button id="btnM" class="btn btn-outline-primary btn-sm w-100">Tháng</button>
-                            </div>
-
-                        </div>
                     </div>
                 </section>
-
-
-
                 <!-- Cột phải (biểu đồ lớn) -->
                 <section class="col-12 col-md-7">
                     <div class="app-scroll">
@@ -126,6 +140,8 @@
                         </div>
                     </div>
                 </section>
+
+
 
             </div>
         </main>
@@ -276,6 +292,8 @@
         }
 
         // ==== KHỞI TẠO CHART (giữ nguyên cấu hình chart của bạn nhưng data rỗng ban đầu) ====
+        const BLUE = '#0d6efd';
+
         const mainCtx = document.getElementById('mainChart');
         const mainChart = new Chart(mainCtx, {
             type: 'line',
@@ -284,21 +302,34 @@
                 datasets: [{
                     label: 'Chi tiêu',
                     data: [],
-                    borderWidth: 2,
-                    tension: .35,
-                    pointRadius: 0,
-                    fill: false
+                    borderColor: BLUE,
+                    backgroundColor: BLUE,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false,
+
+                    // ⬇️ chỉ vẽ chấm nếu có giá trị
+                    pointRadius: ctx => (ctx.raw === null || ctx.raw === 0 ? 0 : 4),
+                    pointHoverRadius: ctx => (ctx.raw === null || ctx.raw === 0 ? 0 : 5),
+                    pointHitRadius: 10
                 }]
             },
             options: {
+                responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { grid: { display: false } },
-                    y: { grid: { color: 'rgba(0,0,0,.05)' } }
+                    x: { grid: { color: 'rgba(0,0,0,.06)', drawBorder: false } },
+                    y: {
+                        beginAtZero: true,
+                        grace: '10%',          // thêm 10% khoảng trống trên/dưới theo dải dữ liệu
+                        ticks: { padding: 8 }
+                    },
                 }
             }
         });
+
+
         // ====== PANEL TẠO TRANSACTION: LOAD CATEGORY & FORM ======
         const elTxAlert = document.getElementById('txAlert');
         const elTxCat = document.getElementById('txCategory');
