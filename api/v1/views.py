@@ -9,11 +9,41 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
-from api.models import Category, Transaction
-from api.v1.serializers import CategorySerializer, TransactionSerializer
+from api.models import Category, Transaction, User
+from api.v1.serializers import CategorySerializer, TransactionSerializer, UserSerializer
 
-from api.models import Category
-from api.v1.serializers import CategorySerializer
+@api_view(['GET','POST'])
+def user_list(request):
+    if request.method == 'GET':
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+    if request.method == 'POST':
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.error)
+
+@api_view(['GET','PUT','DELETE'])
+def user_detail(request, pk):
+    if request.method == 'GET':
+        user = User.objects.get(pk=pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    if request.method == 'PUT':
+        user = User.objects.get(pk=pk)
+        serializer = UserSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.error)
+    if request.method == 'DELETE':
+        user = User.objects.get(pk=pk)
+        user.delete()
+        return Response()
 
 @api_view(['GET', 'POST'])
 def category_list(request):
@@ -48,6 +78,7 @@ def category_detail(request, pk):
         category = Category.objects.get(pk=pk)
         category.delete()
         return Response()
+
 
                       
 # ---- TRANSACTION CRUD ----
