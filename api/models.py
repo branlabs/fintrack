@@ -3,6 +3,8 @@ from django.conf import settings
 from decimal import Decimal
 from django.core.validators import MinValueValidator
 
+
+
 class Category(models.Model):
     name = models.CharField(max_length=120, unique=True)
     def __str__(self): 
@@ -15,6 +17,7 @@ class User(models.Model):
 
 class Transaction(models.Model):
     category = models.ForeignKey('Category', on_delete=models.PROTECT, related_name='transactions')
+    user = models.ForeignKey('User', on_delete=models.PROTECT, related_name='transactions')
     amount = models.DecimalField(max_digits=14, decimal_places=2, help_text="Số tiền chi).")
     occurred_on = models.DateField(db_index=True)
     note = models.CharField(max_length=255, blank=True, default='')

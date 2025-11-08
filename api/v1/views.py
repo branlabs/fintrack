@@ -2,7 +2,7 @@ from datetime import date
 from calendar import monthrange
 
 from django.db.models import Sum, Case, When, Value, IntegerField
-from django.db.models.functions import ExtractDay, ExtractMonth, ExtractYear, TruncMonth, TruncYear
+from django.db.models.functions import ExtractDay, ExtractMonth, ExtractYear
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -11,6 +11,7 @@ from rest_framework import status
 
 from api.models import Category, Transaction, User
 from api.v1.serializers import CategorySerializer, TransactionSerializer, UserSerializer
+
 
 @api_view(['GET','POST'])
 def user_list(request):
@@ -128,7 +129,7 @@ def transaction_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# ---- Tổng hợp: tuần / tháng / năm ----
+# ---- Tổng hợp: ngày / tuần / tháng / năm (lọc theo category & user) ----
 @api_view(['GET'])
 def transaction_summary(request):
     """
@@ -137,46 +138,57 @@ def transaction_summary(request):
     /api/transaction/summary/?group=month&year=2025
     /api/transaction/summary/?group=year&year=2025
 
-    - amount có thể âm/dương (thu/chi). Nếu muốn chỉ tính CHI, client truyền ?type=expense (amount__lt=0).
-    - Lọc theo category qua ?category=<id>.
+    Tuỳ chọn lọc:
+      - ?category=3         hoặc ?category=2,5,7
+      - ?user=4             hoặc ?user=1,2
     """
     group = request.query_params.get('group')  # 'day' | 'week' | 'month' | 'year'
     if group not in ('day', 'week', 'month', 'year'):
-        return Response({'detail': 'group must be one of: day, week, month, year'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'group must be one of: day, week, month, year'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     qs = Transaction.objects.all()
 
-    # Lọc theo category optional
-    category_id = request.query_params.get('category')
-    if category_id:
-        qs = qs.filter(category_id=category_id)
+    def parse_id_list(raw):
+        if not raw:
+            return []
+        ids = []
+        for p in str(raw).split(','):
+            p = p.strip()
+            if not p:
+                continue
+            try:
+                ids.append(int(p))
+            except ValueError:
+                pass
+        return ids
 
-    # Lọc kiểu thu/chi optional
-    tx_type = request.query_params.get('type')  # 'income' | 'expense' | None
-    if tx_type == 'income':
-        qs = qs.filter(amount__gt=0)
-    elif tx_type == 'expense':
-        qs = qs.filter(amount__lt=0)
+    # Lọc category (1 hoặc nhiều id)
+    category_ids = parse_id_list(request.query_params.get('category'))
+    if category_ids:
+        qs = qs.filter(category_id__in=category_ids)
 
-    # ---- GROUP = DAY: ngày 1..N trong một tháng ----
+    # Lọc user (1 hoặc nhiều id)
+    user_ids = parse_id_list(request.query_params.get('user'))
+    if user_ids:
+        qs = qs.filter(user_id__in=user_ids)
+
+    # ---- GROUP = DAY ----
     if group == 'day':
         year = request.query_params.get('year')
         month = request.query_params.get('month')
         if not (year and month):
-            return Response({'detail': 'day summary requires year and month'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'day summary requires year and month'},
+                            status=status.HTTP_400_BAD_REQUEST)
         year = int(year); month = int(month)
-
-        # Số ngày trong tháng
         days_in_month = monthrange(year, month)[1]
 
-        # Lọc theo tháng/năm rồi group theo ngày
         rows = (qs.filter(occurred_on__year=year, occurred_on__month=month)
                   .annotate(d=ExtractDay('occurred_on'))
                   .values('d')
                   .annotate(total=Sum('amount'))
                   .values('d', 'total'))
 
-        # Bảo đảm đủ 1..days_in_month
         result = {d: '0.00' for d in range(1, days_in_month + 1)}
         for r in rows:
             result[int(r['d'])] = str(r['total'] or 0)
@@ -185,19 +197,20 @@ def transaction_summary(request):
             'group': 'day',
             'year': year,
             'month': month,
+            'filters': {'category': category_ids or None, 'user': user_ids or None},
             'data': [{'day': d, 'total': result[d]} for d in range(1, days_in_month + 1)]
         }, status=status.HTTP_200_OK)
 
-    # ---- GROUP = WEEK: tuần 1..4 trong 1 tháng (gộp ngày 29-31 vào tuần 4) ----
+    # ---- GROUP = WEEK ----
     if group == 'week':
         year = request.query_params.get('year')
         month = request.query_params.get('month')
         if not (year and month):
-            return Response({'detail': 'week summary requires year and month'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'week summary requires year and month'},
+                            status=status.HTTP_400_BAD_REQUEST)
         year = int(year); month = int(month)
 
-        qs = qs.filter(occurred_on__year=year, occurred_on__month=month).annotate(day=ExtractDay('occurred_on'))
-
+        qs2 = qs.filter(occurred_on__year=year, occurred_on__month=month).annotate(day=ExtractDay('occurred_on'))
         week_bucket = Case(
             When(day__lte=7, then=Value(1)),
             When(day__lte=14, then=Value(2)),
@@ -205,12 +218,10 @@ def transaction_summary(request):
             default=Value(4),
             output_field=IntegerField()
         )
-
-        rows = (qs
-                .annotate(week=week_bucket)
-                .values('week')
-                .annotate(total=Sum('amount'))
-                .values('week', 'total'))
+        rows = (qs2.annotate(week=week_bucket)
+                    .values('week')
+                    .annotate(total=Sum('amount'))
+                    .values('week', 'total'))
 
         result = {1: '0.00', 2: '0.00', 3: '0.00', 4: '0.00'}
         for r in rows:
@@ -220,6 +231,7 @@ def transaction_summary(request):
             'group': 'week',
             'year': year,
             'month': month,
+            'filters': {'category': category_ids or None, 'user': user_ids or None},
             'data': [
                 {'week': 1, 'total': result[1]},
                 {'week': 2, 'total': result[2]},
@@ -228,11 +240,12 @@ def transaction_summary(request):
             ]
         }, status=status.HTTP_200_OK)
 
-    # ---- GROUP = MONTH: tháng 1..12 trong 1 năm ----
+    # ---- GROUP = MONTH ----
     if group == 'month':
         year = request.query_params.get('year')
         if not year:
-            return Response({'detail': 'month summary requires year'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'month summary requires year'},
+                            status=status.HTTP_400_BAD_REQUEST)
         year = int(year)
 
         rows = (qs.filter(occurred_on__year=year)
@@ -248,14 +261,16 @@ def transaction_summary(request):
         return Response({
             'group': 'month',
             'year': year,
+            'filters': {'category': category_ids or None, 'user': user_ids or None},
             'data': [{'month': m, 'total': result[m]} for m in range(1, 13)]
         }, status=status.HTTP_200_OK)
 
-    # ---- GROUP = YEAR: năm trước / năm nay / năm sau (tâm là 'year' truyền vào) ----
+    # ---- GROUP = YEAR ----
     if group == 'year':
         center_year = request.query_params.get('year')
         if not center_year:
-            return Response({'detail': 'year summary requires year'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'year summary requires year'},
+                            status=status.HTTP_400_BAD_REQUEST)
         center_year = int(center_year)
         years = [center_year - 1, center_year, center_year + 1]
 
@@ -272,5 +287,6 @@ def transaction_summary(request):
         return Response({
             'group': 'year',
             'years': years,
+            'filters': {'category': category_ids or None, 'user': user_ids or None},
             'data': [{'year': y, 'total': result[y]} for y in years]
         }, status=status.HTTP_200_OK)
