@@ -47,6 +47,15 @@ body {
     border-radius: var(--radius-md);
 }
 
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Main layout */
 .app-main {
     flex: 1;
@@ -69,7 +78,13 @@ body {
     padding: 1.5rem 1rem;
 }
 
-.sidebar .nav-link {
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.sidebar-nav .nav-link {
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
@@ -79,8 +94,8 @@ body {
     transition: background .2s ease, color .2s ease;
 }
 
-.sidebar .nav-link.active,
-.sidebar .nav-link:hover {
+.sidebar-nav .nav-link.active,
+.sidebar-nav .nav-link:hover {
     background: var(--primary-soft);
     color: var(--primary);
 }
@@ -238,4 +253,81 @@ body {
 #filterCategory,
 #filterUser {
     min-width: 150px;
+}
+
+.filter-tools .input-group {
+    min-width: 180px;
+}
+
+@media (max-width: 991.98px) {
+    .app-root {
+        min-height: 100vh;
+        height: auto;
+    }
+
+    .app-header {
+        padding: 0 1rem;
+    }
+
+    .app-main {
+        padding: 0 1rem 1.5rem;
+    }
+
+    .app-main .row {
+        row-gap: 1.5rem;
+    }
+
+    .app-scroll {
+        padding: 1rem;
+        height: auto;
+        overflow: visible;
+    }
+
+    .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--border-soft);
+        padding: 1rem;
+        height: auto;
+    }
+
+    .mini-card,
+    .big-card {
+        min-height: auto;
+    }
+
+    .filter-tools {
+        width: 100%;
+    }
+
+    .filter-tools .input-group {
+        width: 100%;
+    }
+
+    #filterCategory,
+    #filterUser {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .app-footer {
+        height: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .5rem;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-header h5 {
+        font-size: 1.05rem;
+    }
+
+    .app-scroll {
+        padding: .75rem;
+    }
+
+    .btn-group .btn {
+        font-size: .85rem;
+    }
 }
