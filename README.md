@@ -1,4 +1,6 @@
-# FinTrack
+<h1 align="center" style="border-bottom: none">
+    <a href="" target="_blank"><img alt="Fintrack" src="/documentation/images/fintrack.png"></a><br>Fintrack
+</h1>
 
 > Record daily expenses by category and view visual charts.
 
@@ -9,7 +11,7 @@
 * **Charts** by **day / week / month**
 * Export reports: **PDF**, **CSV**
 
-## Architecture
+## Architecture overview
 
 * `fintrack/web` — Web app (Bootstrap)
 * `fintrack/api/v1` — REST API (Django)
@@ -63,12 +65,3 @@ python .\manage.py migrate
 python .\manage.py runserver
 ```
 
-## Directory Structure
-
-```
-fintrack/
-├─ web/                 # web source (templates, static, Bootstrap)
-├─ api/
-│  └─ v1/               # Django REST API (views, serializers, urls)
-├─ manage.py
-```
