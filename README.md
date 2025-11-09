@@ -1,6 +1,9 @@
 <h1 align="center" style="border-bottom: none">
-    <a href="" target="_blank"><img alt="Fintrack" src="/documentation/images/fintrack.png"></a><br>Fintrack
+  <a href="" target="_blank">
+    <img alt="Fintrack" src="documentation/images/fintrack.png" width="220">
+  </a><br>Fintrack
 </h1>
+
 
 > Record daily expenses by category and view visual charts.
 
