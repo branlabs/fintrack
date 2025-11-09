@@ -1,6 +1,6 @@
 <h1 align="center" style="border-bottom: none">
   <a href="" target="_blank">
-    <img alt="Fintrack" src="documentation/images/fintrack.png" width="200">
+    <img alt="Fintrack" src="documentation/images/fintrack.png" width="150">
   </a><br>Fintrack
 </h1>
 
