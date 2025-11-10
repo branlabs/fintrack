@@ -43,6 +43,13 @@ body {
     z-index: 1000;
 }
 
+.brand-logo {
+    width: 32px;
+    height: 32px;
+    display: block;
+    object-fit: contain;
+}
+
 .app-header .btn {
     border-radius: var(--radius-md);
 }
