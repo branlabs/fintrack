@@ -77,6 +77,12 @@ body {
     padding-bottom: calc(1.5rem + var(--footer-h));
 }
 
+.blank-canvas {
+    min-height: calc(100vh - var(--header-h) - var(--footer-h));
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+}
+
 /* Sidebar */
 .sidebar {
     border-right: 1px solid var(--border-soft);
