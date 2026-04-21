@@ -25,24 +25,23 @@ def user_list(request):
             serializer.save()
             return Response(serializer.data)
         else:
-            return Response(serializer.error)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET','PUT','DELETE'])
 def user_detail(request, pk):
+    user = get_object_or_404(User, pk=pk)
+
     if request.method == 'GET':
-        user = User.objects.get(pk=pk)
         serializer = UserSerializer(user)
         return Response(serializer.data)
     if request.method == 'PUT':
-        user = User.objects.get(pk=pk)
         serializer = UserSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         else:
-            return Response(serializer.error)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'DELETE':
-        user = User.objects.get(pk=pk)
         user.delete()
         return Response()
 
@@ -58,25 +57,24 @@ def category_list(request):
             serializer.save()
             return Response(serializer.data)
         else:
-            return Response(serializer.error)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
 def category_detail(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+
     if request.method == 'GET':
-        category = Category.objects.get(pk=pk)
         serializer = CategorySerializer(category)
         return Response(serializer.data)
     
     if request.method == 'PUT':
-        category = Category.objects.get(pk=pk)
         serializer = CategorySerializer(category, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'DELETE':
-        category = Category.objects.get(pk=pk)
         category.delete()
         return Response()
 
@@ -180,7 +178,16 @@ def transaction_summary(request):
         if not (year and month):
             return Response({'detail': 'day summary requires year and month'},
                             status=status.HTTP_400_BAD_REQUEST)
-        year = int(year); month = int(month)
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            return Response({'detail': 'invalid year'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            month = int(month)
+        except (TypeError, ValueError):
+            return Response({'detail': 'invalid month'}, status=status.HTTP_400_BAD_REQUEST)
+        if month < 1 or month > 12:
+            return Response({'detail': 'invalid month'}, status=status.HTTP_400_BAD_REQUEST)
         days_in_month = monthrange(year, month)[1]
 
         rows = (qs.filter(occurred_on__year=year, occurred_on__month=month)
@@ -208,7 +215,16 @@ def transaction_summary(request):
         if not (year and month):
             return Response({'detail': 'week summary requires year and month'},
                             status=status.HTTP_400_BAD_REQUEST)
-        year = int(year); month = int(month)
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            return Response({'detail': 'invalid year'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            month = int(month)
+        except (TypeError, ValueError):
+            return Response({'detail': 'invalid month'}, status=status.HTTP_400_BAD_REQUEST)
+        if month < 1 or month > 12:
+            return Response({'detail': 'invalid month'}, status=status.HTTP_400_BAD_REQUEST)
 
         qs2 = qs.filter(occurred_on__year=year, occurred_on__month=month).annotate(day=ExtractDay('occurred_on'))
         week_bucket = Case(
@@ -246,7 +262,10 @@ def transaction_summary(request):
         if not year:
             return Response({'detail': 'month summary requires year'},
                             status=status.HTTP_400_BAD_REQUEST)
-        year = int(year)
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            return Response({'detail': 'invalid year'}, status=status.HTTP_400_BAD_REQUEST)
 
         rows = (qs.filter(occurred_on__year=year)
                   .annotate(m=ExtractMonth('occurred_on'))
@@ -271,7 +290,10 @@ def transaction_summary(request):
         if not center_year:
             return Response({'detail': 'year summary requires year'},
                             status=status.HTTP_400_BAD_REQUEST)
-        center_year = int(center_year)
+        try:
+            center_year = int(center_year)
+        except (TypeError, ValueError):
+            return Response({'detail': 'invalid year'}, status=status.HTTP_400_BAD_REQUEST)
         years = [center_year - 1, center_year, center_year + 1]
 
         rows = (qs.filter(occurred_on__year__in=years)

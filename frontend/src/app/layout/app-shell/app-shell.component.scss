@@ -1,0 +1,41 @@
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #f8fbff 0%, #eef4ff 100%);
+  color: #142033;
+}
+
+.app-shell__header {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 0.5rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+p {
+  margin: 0.35rem 0 0;
+  color: #5b6b84;
+}
+
+.app-shell__content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}

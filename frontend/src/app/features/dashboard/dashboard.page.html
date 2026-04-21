@@ -1,0 +1,41 @@
+<section class="dashboard">
+  <div class="dashboard__header">
+    <h2>Add household transaction</h2>
+    <p>Track daily spending quickly with a clean workflow.</p>
+  </div>
+
+  <app-loading-skeleton *ngIf="initialLoading"></app-loading-skeleton>
+
+  <ng-container *ngIf="!initialLoading">
+    <app-error-banner *ngIf="initialLoadError" [message]="initialLoadError || ''"></app-error-banner>
+
+    <button
+      *ngIf="initialLoadError"
+      type="button"
+      class="retry-btn"
+      (click)="loadInitialData()"
+    >
+      Retry loading
+    </button>
+
+    <app-error-banner *ngIf="submitError" [message]="submitError || ''"></app-error-banner>
+
+    <p *ngIf="submitSuccessMessage" class="success-message">{{ submitSuccessMessage }}</p>
+
+    <p
+      *ngIf="!initialLoadError && (categories.length === 0 || users.length === 0)"
+      class="empty-message"
+    >
+      You need at least one category and one user before creating transactions.
+    </p>
+
+    <app-transaction-form
+      *ngIf="!initialLoadError"
+      [categories]="categories"
+      [users]="users"
+      [submitLoading]="submitLoading"
+      [disabled]="disableForm"
+      (submitTransaction)="onSubmitTransaction($event)"
+    ></app-transaction-form>
+  </ng-container>
+</section>

@@ -1,0 +1,33 @@
+.skeleton-card {
+  border: 1px solid #e5ebf5;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.line {
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #edf2fb 0%, #f6f9ff 50%, #edf2fb 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+  margin-bottom: 0.65rem;
+}
+
+.line--title {
+  height: 16px;
+  width: 55%;
+}
+
+.line--short {
+  width: 70%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
